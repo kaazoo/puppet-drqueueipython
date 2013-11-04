@@ -27,4 +27,13 @@ class drqueueipython::install {
     reqs => Exec["distribute-install"],
   }
 
+  # install MongoDB if acting as DrQueue master
+  if $role == "master" {
+    if ! defined(Package["mongodb"]) {
+      package { ["mongodb"]:
+        ensure => present,
+      }
+    }
+  }
+
 }
