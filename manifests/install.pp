@@ -32,7 +32,7 @@ class drqueueipython::install {
   if $drqueueipython::role == "master" {
 
     # add repository
-    apt::source { 'mongodb.list':
+    apt::source { 'mongodb':
       location    => 'http://downloads-distro.mongodb.org/repo/ubuntu-upstart',
       release     => 'dist',
       repos       => '10gen',
@@ -42,7 +42,7 @@ class drqueueipython::install {
     }
 
     # install package
-    if ! defined(Package["mongodb"]) {
+    if ! defined(Package["mongodb-10gen"]) {
       package { ["mongodb-10gen"]:
         ensure  => present,
         require => Apt::Source['mongodb.list'],
