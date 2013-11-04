@@ -22,8 +22,11 @@ class drqueueipython::config {
   # configure MongoDB if acting as DrQueue master
   if $drqueueipython::role == "master" {
 
-    # disable upstart script
-    # todo
+    # disable & stop default MongoDB
+    service { 'mongodb':
+      enable => false,
+      ensure => stopped,
+    }
 
   }
 
