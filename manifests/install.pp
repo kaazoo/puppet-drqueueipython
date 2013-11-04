@@ -1,6 +1,7 @@
 class drqueueipython::install {
 
   search Ipython::Functions
+  include apt
 
   # clone from git repository
   exec { "git clone -b ${drqueueipython::git_branch} git://github.com/kaazoo/DrQueueIPython.git":
@@ -29,11 +30,25 @@ class drqueueipython::install {
 
   # install MongoDB if acting as DrQueue master
   if $role == "master" {
+
+    # add repository
+    apt::source { 'mongodb.list':
+      location          => 'http://downloads-distro.mongodb.org/repo/ubuntu-upstart',
+      release           => 'dist',
+      repos             => '10gen',
+      key               => '7F0CEB10',
+      key_server        => 'keyserver.ubuntu.com',
+      include_src       => false
+    }
+
+    # install package
     if ! defined(Package["mongodb"]) {
-      package { ["mongodb"]:
-        ensure => present,
+      package { ["mongodb-10gen"]:
+        ensure  => present,
+        require => 'add-mongodb-repo',
       }
     }
+
   }
 
 }
