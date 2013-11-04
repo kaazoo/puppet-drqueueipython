@@ -1,5 +1,9 @@
 class drqueueipython::config {
 
+  class { 'ipython':
+    git_tag => 'rel-1.1.0',
+  }
+
   include ipython
 
   group { "drqueue":
@@ -15,5 +19,12 @@ class drqueueipython::config {
     require    => Group["drqueue"]
   }
 
+  # configure MongoDB if acting as DrQueue master
+  if $drqueueipython::role == "master" {
+
+    # disable upstart script
+    # todo
+
+  }
 
 }
