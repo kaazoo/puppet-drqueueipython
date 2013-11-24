@@ -1,31 +1,25 @@
 class drqueueipython::install {
 
-  search Ipython::Functions
   include apt
 
-  # clone from git repository
-  exec { "git clone -b ${drqueueipython::git_branch} git://github.com/kaazoo/DrQueueIPython.git":
-    cwd     => "/root",
-    creates => "/root/DrQueueIPython",
-    path    => ["/bin", "/usr/bin", "/usr/sbin"],
-    require => Package["git-core"],
-    notify  => Exec["distribute-install"],
-  }
 
-  # install setuptools/distribute Python module
-  exec { "python${ipython::python_version} distribute_setup.py":
-    cwd         => "/root/DrQueueIPython",
-    path        => ["/bin", "/usr/bin", "/usr/sbin"],
-    require     => Package["python${ipython::python_version}", "python${ipython::python_version}-dev"],
-    refreshonly => true,
-    alias       => "distribute-install",
-    notify      => Exec["drqueueipython-install"]
+  class { 'ipython':
+    python_version => $drqueueipython::python_version,
   }
+  include ipython
 
-  # install from cloned git repository
-  pysetup_install { "drqueueipython":
-    cwd => "/root/DrQueueIPython",
-    reqs => Exec["distribute-install"],
+  # run install via pip
+  if $drqueueipython::install_method == 'pip' {
+
+    include drqueueipython::pip_install
+
+  # run install via git
+  } elsif $drqueueipython::install_method == 'git' {
+
+    include drqueueipython::git_install
+
+  } else {
+    err('unsupported install method')
   }
 
   # install MongoDB if acting as DrQueue master

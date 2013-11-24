@@ -1,26 +1,30 @@
 class drqueueipython::config {
 
-  class { 'ipython':
-    git_tag => 'rel-1.1.0',
+  # add drqueue group
+  group { 'drqueue':
+    ensure => 'present',
   }
 
-  include ipython
-
-  group { "drqueue":
-    ensure => "present",
-  }
-
-  user { "drqueue":
+  # add drqueue user
+  user { 'drqueue':
     ensure     => present,
-    gid        => "drqueue",
-    home       => "/home/drqueue",
+    gid        => 'drqueue',
+    home       => '/home/drqueue',
     managehome => true,
-    shell      => "/bin/bash",
-    require    => Group["drqueue"]
+    shell      => '/bin/bash',
+    require    => Group['drqueue']
   }
+
+  # add environment configuration
+  file { '/etc/profile.d/drqueue.sh':
+    ensure => present,
+    content => template('drqueueipython/drqueue.sh.erb'),
+  }
+
+  # tell user to source /etc/profile
 
   # configure MongoDB if acting as DrQueue master
-  if $drqueueipython::role == "master" {
+  if $drqueueipython::role == 'master' {
 
     # disable & stop default MongoDB
     service { 'mongodb':
@@ -28,6 +32,30 @@ class drqueueipython::config {
       ensure => stopped,
     }
 
+    # install controller config
+    file { '/usr/local/drqueue/ipython/profile_default/ipcontroller_config.py':
+      owner   => 'drqueue',
+      group   => 'drqueue',
+      mode    => 644,
+      content => template('drqueueipython/ipcontroller_config.py.erb'),
+      require => Exec['create_drqueue_dirs'],
+    }
+
+  } elsif $drqueueipython::role == 'slave' {
+
+    # add environment configuration
+    file { '/etc/profile.d/drqueue.sh':
+      ensure => present,
+      content => template('drqueueipython/drqueue.sh.erb'),
+    }
+
+    # TODO: tell user to source /etc/profile
+
+    # TODO: add mountpoint (SSHFS)
+    # sshfs 192.168.1.1:/usr/local/drqueue /usr/local/drqueue
+
+  } else {
+    err('unsupported role value')
   }
 
 }
