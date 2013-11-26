@@ -15,6 +15,16 @@ class drqueueipython::config {
     require    => Group['drqueue']
   }
 
+  # add SSH public key
+  if $drqueueipython::public_key != '' {
+    ssh_authorized_key { 'drqueue_pubkey':
+      ensure => present,
+      key    => $drqueueipython::public_key,
+      type   => 'ssh-rsa',
+      user   => 'drqueue',
+    }
+  }
+
   # add environment configuration
   file { '/etc/profile.d/drqueue.sh':
     ensure => present,
