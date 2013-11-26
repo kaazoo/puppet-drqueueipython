@@ -53,12 +53,6 @@ class drqueueipython::config {
 
   } elsif $drqueueipython::role == 'slave' {
 
-    # add environment configuration
-    file { '/etc/profile.d/drqueue.sh':
-      ensure => present,
-      content => template('drqueueipython/drqueue.sh.erb'),
-    }
-
     # TODO: tell user to source /etc/profile
 
     # TODO: add mountpoint (SSHFS)
