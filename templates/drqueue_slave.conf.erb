@@ -1,0 +1,21 @@
+# DrQueue slave
+#
+# The DrQueue slave process provides execution of render jobs.
+
+description "DrQueue slave"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+respawn limit 10 5
+
+pre-start script
+    /bin/su -c "/usr/bin/sshfs <%= @master %>:/usr/local/drqueue /usr/local/drqueue -o uid=`/usr/bin/id -u drqueue` -o gid=`/usr/bin/id -g drqueue`" drqueue
+end script
+
+post-stop script
+    /bin/su -c "/bin/fusermount -u /usr/local/drqueue" drqueue
+end script
+
+exec /bin/su - -c "/usr/local/bin/drqueue slave -v" drqueue

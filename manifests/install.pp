@@ -3,6 +3,7 @@ class drqueueipython::install {
   include apt
 
 
+  # install IPython
   class { 'ipython':
     python_version => $drqueueipython::python_version,
   }
@@ -43,6 +44,40 @@ class drqueueipython::install {
       }
     }
 
+  # install required renderer if acting as DrQueue slave
+  } elsif $drqueueipython::role == 'slave' {
+
+    # install Blender
+    if $drqueueipython::renderer == 'blender' {
+
+      # add repository
+      apt::source { 'blender':
+        location    => 'http://ppa.launchpad.net/irie/blender/ubuntu',
+        release     => 'precise',
+        repos       => 'main',
+        key         => 'C4A100CF',
+        key_server  => 'keyserver.ubuntu.com',
+        include_src => false
+      }
+
+      # install package
+      if ! defined(Package['blender']) {
+        package { ['blender']:
+          ensure  => present,
+          require => Apt::Source['blender'],
+        }
+      }
+    }
+
+    # install sshfs
+    if ! defined(Package['sshfs']) {
+      package { ['sshfs']:
+        ensure  => present,
+      }
+    }
+
+  } else {
+    err('unsupported role value')
   }
 
 }

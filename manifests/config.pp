@@ -31,7 +31,11 @@ class drqueueipython::config {
     content => template('drqueueipython/drqueue.sh.erb'),
   }
 
-  # tell user to source /etc/profile
+  # add hosts entry
+  host { "$hostname":
+    ensure => present,
+    ip     => '127.0.1.1',
+  }
 
   # configure MongoDB if acting as DrQueue master
   if $drqueueipython::role == 'master' {
@@ -53,10 +57,51 @@ class drqueueipython::config {
 
   } elsif $drqueueipython::role == 'slave' {
 
-    # TODO: tell user to source /etc/profile
+    # SSH config directory
+    file { '/home/drqueue/.ssh':
+      ensure => directory,
+      owner  => 'drqueue',
+      group  => 'drqueue',
+      mode   => 700,
+    }
 
-    # TODO: add mountpoint (SSHFS)
-    # sshfs 192.168.1.1:/usr/local/drqueue /usr/local/drqueue
+    # DrQueue mountpoint
+    file { '/usr/local/drqueue':
+      ensure => directory,
+      owner  => 'drqueue',
+      group  => 'drqueue',
+      mode   => 775,
+    }
+
+    # extract SSH pubkey from master
+    exec { "ssh-keyscan ${drqueueipython::master} 2>/dev/null >>/home/drqueue/.ssh/known_hosts":
+      path        => ['/bin', '/usr/bin', '/usr/sbin'],
+      require     => File['/home/drqueue/.ssh'],
+      unless      => "grep ${drqueueipython::master} /home/drqueue/.ssh/known_hosts",
+      user        => 'drqueue',
+      environment => ['HOME=/home/drqueue/'],
+    }
+
+    # generate SSH keypair
+    exec { "ssh-keygen -b 2048 -t rsa -N '' -f /home/drqueue/.ssh/id_rsa":
+      path        => ['/bin', '/usr/bin', '/usr/sbin'],
+      require     => File['/home/drqueue/.ssh'],
+      creates     => '/home/drqueue/.ssh/id_rsa',
+      user        => 'drqueue',
+      environment => ['HOME=/home/drqueue/'],
+    }
+
+    # upstart job
+    file { '/etc/init/drqueue_slave.conf':
+      ensure  => present,
+      content => template('drqueueipython/drqueue_slave.conf.erb'),
+    }
+
+    # upstart init.d link
+    file { '/etc/init.d/drqueue_slave':
+      ensure => link,
+      target => '/lib/init/upstart-job',
+    }
 
   } else {
     err('unsupported role value')
