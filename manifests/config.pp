@@ -15,16 +15,6 @@ class drqueueipython::config {
     require    => Group['drqueue']
   }
 
-  # add SSH public key
-  if $drqueueipython::public_key != '' {
-    ssh_authorized_key { 'drqueue_pubkey':
-      ensure => present,
-      key    => $drqueueipython::public_key,
-      type   => 'ssh-rsa',
-      user   => 'drqueue',
-    }
-  }
-
   # add environment configuration
   file { '/etc/profile.d/drqueue.sh':
     ensure => present,
@@ -39,6 +29,16 @@ class drqueueipython::config {
 
   # configure MongoDB if acting as DrQueue master
   if $drqueueipython::role == 'master' {
+
+    # add SSH public key of slave
+    if $drqueueipython::public_key != '' {
+      ssh_authorized_key { 'drqueue_pubkey':
+        ensure => present,
+        key    => $drqueueipython::public_key,
+        type   => 'ssh-rsa',
+        user   => 'drqueue',
+      }
+    }
 
     # disable & stop default MongoDB
     service { 'mongodb':
@@ -82,13 +82,39 @@ class drqueueipython::config {
       environment => ['HOME=/home/drqueue/'],
     }
 
-    # generate SSH keypair
-    exec { "ssh-keygen -b 2048 -t rsa -N '' -f /home/drqueue/.ssh/id_rsa":
-      path        => ['/bin', '/usr/bin', '/usr/sbin'],
-      require     => File['/home/drqueue/.ssh'],
-      creates     => '/home/drqueue/.ssh/id_rsa',
-      user        => 'drqueue',
-      environment => ['HOME=/home/drqueue/'],
+    # add SSH public key
+    if $drqueueipython::public_key != '' {
+      file { '/home/drqueue/.ssh/id_rsa.pub':
+        ensure  => present,
+        content => $drqueueipython::public_key,
+        owner  => 'drqueue',
+        group  => 'drqueue',
+        mode   => 644,
+      }
+    }
+
+    # add SSH private key
+    if $drqueueipython::private_key != '' {
+
+      file { '/home/drqueue/.ssh/id_rsa':
+        ensure  => present,
+        content => $drqueueipython::private_key,
+        owner  => 'drqueue',
+        group  => 'drqueue',
+        mode   => 600,
+      }
+
+    } else {
+
+      # generate SSH keypair if none given
+      exec { "ssh-keygen -b 2048 -t rsa -N '' -f /home/drqueue/.ssh/id_rsa":
+        path        => ['/bin', '/usr/bin', '/usr/sbin'],
+        require     => File['/home/drqueue/.ssh'],
+        creates     => '/home/drqueue/.ssh/id_rsa',
+        user        => 'drqueue',
+        environment => ['HOME=/home/drqueue/'],
+      }
+
     }
 
     # upstart job

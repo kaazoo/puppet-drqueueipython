@@ -3,6 +3,7 @@ class drqueueipython (
   $master = '127.0.0.1',
   $mongodb = '127.0.0.1',
   $public_key = '',
+  $private_key = '',
   $install_method = 'git',
   $drqueue_version = '1.0',
   $git_branch = 'master',
